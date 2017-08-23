@@ -3,6 +3,8 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 
+const { checkTicket } = require('./sso/sso');
+
 let app = express();
 
 app.set('views', './views');
@@ -37,7 +39,26 @@ loginRouter.get('/', function(req, res, next) {
         res.redirect('/');
         return;
     }
-    res.render('login');
+    let ticket = req.query.ssoTicket;
+    // 没有ticket，跳转到单点登录
+    if (typeof ticket == 'undefined') {
+        res.redirect('http://www.c.com');
+        return;
+    // ticket 为空，返回登录页
+    } else if (ticket == '') {
+        res.render('login');
+        return;
+    } else {
+        // 检查ticket是否有效
+        checkTicket(ticket,function(err,result){
+            if(!err && result.retCode == 1){
+                req.session.user = result.user;
+                res.redirect('/');
+            }else{
+                res.render('login');
+            }
+        });
+    }
 });
 
 loginRouter.post('/', function(req, res, next) {
@@ -90,7 +111,7 @@ app.use(function(err, req, res, next) {
     res.end();
 });
 
-console.log(process.argv[2]);
+// console.log(process.argv[2]);
 
 let port = process.argv[2] || 80;
 
