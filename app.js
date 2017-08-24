@@ -6,6 +6,8 @@ const path = require('path');
 
 let app = express();
 
+app.set('view engine', 'pug');
+app.set('views', './views');
 
 app.use(session({
     key: 'sessionID',
@@ -37,7 +39,7 @@ loginRouter.get('/', function(req, res, next) {
         res.redirect('/');
         return;
     }
-    res.sendFile(path.resolve(__dirname, './public/login.html'));
+    res.render('login');
 });
 
 loginRouter.post('/', function(req, res, next) {

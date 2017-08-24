@@ -8,5 +8,32 @@ html(lang="en")
     body
         .login-box
             .row
-                label.key 用户名
+                label.key(for="") 用户名
                 input.input#tbUsername 
+            .row
+                label.key(for="") 密码
+                input.input#tbPassword(type="password")
+            .row
+                button.btn#btnLogin 登录
+        script(src="lib/jquery.min.js")
+        script.
+            $(function(){
+                $("#btnLogin").click(function(){
+                    $.ajax({
+                        url:'/login',
+                        data:{
+                            username:$('#tbUsername').val(),
+                            password:$('#tbPassword').val()
+                        },
+                        type:'post',
+                        dataType:'json',
+                        success:function(res){
+                            if(res.retCode == '1'){
+                                location.href = '/';
+                            }else{
+                                alert(rest.retMsg);
+                            }
+                        }
+                    });
+                });
+            });
