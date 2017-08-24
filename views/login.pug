@@ -4,21 +4,34 @@ html(lang="en")
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         meta(http-equiv="X-UA-Compatible", content="ie=edge")
-        title Document
+        title Login
+        link(href="css/style.css",rel="stylesheet")
     body
-        .login-box
-            .row
-                label.key(for="") 用户名
-                input.input#tbUsername 
-            .row
-                label.key(for="") 密码
-                input.input#tbPassword(type="password")
-            .row
-                button.btn#btnLogin 登录
-        script(src="lib/jquery.min.js")
-        script.
+        .main
+            .login-box
+                .row
+                    label.key(for="tbUsername") 用户名：
+                    input.input#tbUsername 
+                .row
+                    label.key(for="tbPassword") 密码：
+                    input.input#tbPassword(type="password")
+                .row.mt-40
+                    label.key
+                    button.btn#btnLogin 登 录
+        script(src="lib/jquery.min.js",type="text/javascript")
+        script(type="text/javascript").
             $(function(){
-                $("#btnLogin").click(function(){
+                $('#tbUsername').focus();
+
+                $(document).on('keyup',function(e){
+                    if(e.keyCode == '13'){
+                        submit();
+                    }
+                });
+
+                $("#btnLogin").click(submit);
+
+                function submit(){
                     $.ajax({
                         url:'/login',
                         data:{
@@ -28,12 +41,17 @@ html(lang="en")
                         type:'post',
                         dataType:'json',
                         success:function(res){
-                            if(res.retCode == '1'){
-                                location.href = '/';
+                            if(res.retCode == 1){
+                                var url = '/',
+                                    data = res.data;
+                                if(data.sso_url){
+                                    url = data.sso_url + '?ticket=' + data.ticket + '&backurl=' + data.backurl;
+                                }
+                                location.href = url;
                             }else{
-                                alert(rest.retMsg);
+                                alert(res.retMsg);
                             }
                         }
                     });
-                });
+                }
             });
