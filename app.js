@@ -25,9 +25,9 @@ app.use(cookieParser());
 let loginFilter = express.Router();
 loginFilter.all('*', function(req, res, next) {
     if (req.session.user) {
-        // console.log(req.session.user);
         next();
     } else {
+        log('未登录，跳转到登录页');
         res.redirect('/login');
     }
 });
@@ -35,26 +35,32 @@ loginFilter.all('*', function(req, res, next) {
 // 登录路由 /login 
 let loginRouter = express.Router();
 loginRouter.get('/', function(req, res, next) {
+    let backurl = req.protocol + '://' + domain + req.path;
     if (req.session.user) {
+        log('已登录，跳转到主页');
         res.redirect('/');
         return;
     }
     let ticket = req.query.ticket;
     // 没有ticket，跳转到单点登录
     if (typeof ticket == 'undefined') {
-        res.redirect(SSO_URL);
+        log('没有ticket，跳转到单点登录 backurl=' + backurl);
+        res.redirect(SSO_URL + '?backurl=' + backurl);
         return;
         // ticket 为空，返回登录页
     } else if (ticket == '') {
+        log('sso未登录');
         res.render('login');
         return;
     } else {
         // 检查ticket是否有效
         checkTicket(ticket, function(err, result) {
             if (!err && result.retCode == 1) {
+                log('有效ticket，跳转到主页');
                 req.session.user = result.data.user;
                 res.redirect('/');
             } else {
+                log('无效ticket');
                 res.render('login');
             }
         });
@@ -66,6 +72,7 @@ loginRouter.post('/', function(req, res, next) {
         res.json({ retCode: 0, retMsg: '缺少入参 username/password' });
         return;
     }
+    let backurl = req.protocol + '://' + domain + '/login';
     getTicket(req.body, function(err, result) {
         if (err) {
             res.json({ retCode: 0, retMsg: '系统繁忙，请稍后再试' });
@@ -76,7 +83,7 @@ loginRouter.post('/', function(req, res, next) {
             res.json({
                 retCode: 1,
                 retMsg: 'success',
-                data: { sso_url: SSO_URL, ticket: result.data.ticket, backurl:req.url }
+                data: { sso_url: SSO_URL, ticket: result.data.ticket, backurl: backurl }
             });
         } else {
             res.json(result);
@@ -103,9 +110,9 @@ indexRouter.get('/', function(req, res, next) {
 // 设置静态资源目录
 app.use(express.static('public'));
 // 路由配置
+app.use('/index', loginFilter, indexRouter);
 app.use('/login', loginRouter);
 app.use('/logout', logoutRouter);
-app.use('/', loginFilter, indexRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -122,10 +129,14 @@ app.use(function(err, req, res, next) {
     res.end();
 });
 
-// console.log(process.argv[2]);
-
 let port = process.argv[2] || 80;
+let domain = process.argv[3];
 
 let server = app.listen(port, function() {
     console.log('Example app listening at http://localhost:%s', port);
 });
+
+
+function log(text){
+    console.log(`${domain}: ${text}`);
+}

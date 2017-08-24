@@ -76,16 +76,19 @@ loginRouter.get('/', function(req, res, next) {
     if (req.query.ticket) {
         let result = ticketManager.check(req.query.ticket);
         if (result) {
+            log('同步成功');
             req.session.user = result.data;
         } else {
-            console.log('无效ticket');
+            log('无效ticket');
         }
         // 已登录,在 backurl 后附加 ticket
     } else if (req.session.user) {
         let ticket = ticketManager.push(req.session.user);
         url.searchParams.append('ticket', ticket);
+        log('sso已登录');
     } else {
         url.searchParams.append('ticket', '');
+        log('sso未登录');
     }
     res.redirect(url.toString());
 });
@@ -110,7 +113,12 @@ app.use(function(err, req, res, next) {
 });
 
 let port = process.argv[2] || 80;
+let domain = process.argv[3];
 
 let server = app.listen(port, function() {
     console.log('Example app listening at http://localhost:%s', port);
 });
+
+function log(text){
+    console.log(`${domain}: ${text}`);
+}
