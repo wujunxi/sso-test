@@ -1,0 +1,15 @@
+Title:单点登录-已登录时序图
+user -> www.a.com/index: 未登录a（no-session）
+www.a.com/index --> user:跳转
+user -> www.a.com/login:未登录a（no-session，no-ticket，backurl）
+www.a.com/login --> user:跳转
+user -> www.c.com/login:已登录c（session，no-ticket，backurl）
+www.c.com/login --> user:跳转
+user -> www.a.com/login:登录a（no-session，ticket，backurl）
+www.a.com/login -> www.c.com/login:提交ticket
+Note right of www.a.com/login:服务端通讯
+Note over www.c.com/login:验证ticket
+www.c.com/login -> www.a.com/login:用户信息
+www.a.com/login --> user:登录成功，跳转
+user -> www.a.com/index:访问（session）
+www.a.com/index -> user:访问成功
