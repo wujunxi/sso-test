@@ -40,8 +40,13 @@ html(lang="en")
                         type:'post',
                         dataType:'json',
                         success:function(res){
-                            if(res.retCode == '1'){
-                                location.href = '/';
+                            if(res.retCode == 1){
+                                var url = '/';
+                                if(res.sso_url){
+                                    url = res.sso_url + '?ticket='+res.ticket+'&backurl='+res.backurl
+                                }else{
+                                    location.href = url;
+                                }
                             }else{
                                 alert(res.retMsg);
                             }

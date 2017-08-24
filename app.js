@@ -3,7 +3,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 
-const { checkTicket } = require('./sso/sso');
+const { getTicket, checkTicket, SSO_URL } = require('./sso/sso');
 
 let app = express();
 
@@ -39,22 +39,22 @@ loginRouter.get('/', function(req, res, next) {
         res.redirect('/');
         return;
     }
-    let ticket = req.query.ssoTicket;
+    let ticket = req.query.ticket;
     // 没有ticket，跳转到单点登录
     if (typeof ticket == 'undefined') {
-        res.redirect('http://www.c.com');
+        res.redirect(SSO_URL);
         return;
-    // ticket 为空，返回登录页
+        // ticket 为空，返回登录页
     } else if (ticket == '') {
         res.render('login');
         return;
     } else {
         // 检查ticket是否有效
-        checkTicket(ticket,function(err,result){
-            if(!err && result.retCode == 1){
-                req.session.user = result.user;
+        checkTicket(ticket, function(err, result) {
+            if (!err && result.retCode == 1) {
+                req.session.user = result.data.user;
                 res.redirect('/');
-            }else{
+            } else {
                 res.render('login');
             }
         });
@@ -62,15 +62,26 @@ loginRouter.get('/', function(req, res, next) {
 });
 
 loginRouter.post('/', function(req, res, next) {
-    // console.log(req.body);
-    if (req.body.username == 'admin' && req.body.password == '123456') {
-        req.session.user = {
-            uid: '001'
-        }
-        res.json({ retCode: '1', retMsg: 'success' });
-    } else {
-        res.json({ retCode: '0', retMsg: '用户名或密码错误！' });
+    if (typeof req.body.username == 'undefined' || typeof req.body.password == 'undefined') {
+        res.json({ retCode: 0, retMsg: '缺少入参 username/password' });
+        return;
     }
+    getTicket(req.body, function(err, result) {
+        if (err) {
+            res.json({ retCode: 0, retMsg: '系统繁忙，请稍后再试' });
+            return;
+        }
+        if (result.retCode == 1) {
+            req.session.user = result.data.user;
+            res.json({
+                retCode: 1,
+                retMsg: 'success',
+                data: { sso_url: SSO_URL, ticket: result.data.ticket, backurl:req.url }
+            });
+        } else {
+            res.json(result);
+        }
+    });
 });
 
 // 注销路由

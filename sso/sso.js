@@ -1,10 +1,19 @@
 const http = require('http');
 
+const SSO_URL = 'http://www.c.com/login';
+const SSO_CHECK_TICKET_URL = 'http://localhost:8083/checkTicket';
+const SSO_GET_TICKET_URL = 'http://localhost:8083/getTicket';
+
+
 function checkTicket(ticket, callback) {
-    get(`http://localhost:8083/checkTicket?ticket=${ticket}`, callback);
+    getJson(`${SSO_CHECK_TICKET_URL}?ticket=${ticket}`, callback);
 }
 
-function get(url, callback) {
+function getTicket({ username, password }, callback) {
+    getJson(`${SSO_GET_TICKET_URL}?username=${username}&password=${password}`, callback);
+}
+
+function getJson(url, callback) {
     const req = http.request(url, function(res) {
         if (res.statusCode == 200) {
             let data = '';
@@ -26,5 +35,7 @@ function get(url, callback) {
 
 
 module.exports = {
-    checkTicket
+    getTicket,
+    checkTicket,
+    SSO_URL
 };
