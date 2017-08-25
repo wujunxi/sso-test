@@ -12,7 +12,7 @@ function includes(ticket) {
 function check(ticket) {
     let index = db.findIndex(item => item.ticket == ticket);
     if (index > -1) {
-        return db.splice(index, 1);
+        return db.splice(index, 1)[0];
     }
     return null;
 }

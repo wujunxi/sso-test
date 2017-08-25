@@ -10,12 +10,15 @@ const userManager = require('./sso/user-manager');
 const SESSION_KEY = 'sessionID';
 
 let app = express();
+
+app.set('views', './views');
+app.set('view engine', 'pug');
+
 app.use(session({
     key: SESSION_KEY,
     secret: 'sso-test',
     cookie: { maxAge: 1800000 }, // 30 minutes = 1000 * 60 * 30
     resave: true,
-    // rolling:true,
     saveUninitialized: false
 }));
 app.use(bodyParser.json());
@@ -25,7 +28,6 @@ app.use(cookieParser());
 //  内部访问过滤器，限定IP
 let innerFilter = express.Router();
 innerFilter.all('*', function(req, res, next) {
-    log(req.hostname);
     if (req.hostname == 'localhost') {
         next();
     } else {
@@ -37,28 +39,34 @@ innerFilter.all('*', function(req, res, next) {
 // ticket校验，成功返回用户信息
 let checkTicketRouter = express.Router();
 checkTicketRouter.get('/', function(req, res, next) {
+    let resData = {};
     if (!req.query.ticket) {
-        res.json({ retCode: 0, retMsg: '缺少参数 ticket' });
-        return;
-    }
-    let result = ticketManager.check(req.query.ticket);
-    if (result) {
-        res.json({ retCode: 1, retMsg: 'success', data: { user: result.data } });
+        resData = { retCode: 0, retMsg: '缺少参数 ticket' };
     } else {
-        res.json({ retCode: 0, retMsg: '无效ticket' });
+        let result = ticketManager.check(req.query.ticket);
+        if (result) {
+            resData = { retCode: 1, retMsg: 'success', data: result.data };
+        } else {
+            resData = { retCode: 0, retMsg: '无效ticket' };
+        }
     }
+    log(`内部通讯-验证票据 ${JSON.stringify(resData)}`);
+    res.json(resData);
 });
 
 // 使用用户名密码获取ticket
 let getTicketRouter = express.Router();
 getTicketRouter.get('/', function(req, res, next) {
+    let resData = {};
     let user = userManager.login(req.query.username, req.query.password);
     if (user) {
-        let ticket = ticketManager.push(user);
-        res.json({ retCode: 1, retMsg: 'success', data: { ticket, user } });
+        let ticket = ticketManager.push({ user });
+        resData = { retCode: 1, retMsg: 'success', data: { ticket, user } };
     } else {
-        res.json({ retCode: 0, retMsg: '用户名或密码错误' });
+        resData = { retCode: 0, retMsg: '用户名或密码错误' };
     }
+    log(`内部通讯-获取票据 ${JSON.stringify(resData)}`);
+    res.json(resData);
 });
 
 // 登录态校验
@@ -80,32 +88,17 @@ loginRouter.get('/', function(req, res, next) {
         let result = ticketManager.check(req.query.ticket);
         if (result) {
             log('同步成功' + JSON.stringify(result));
-            req.session.user = result.data;
-            // 由于session是在res.end()时保存，所以redirect要在session保存后调用
-            req.session.save(function(err){
-                if(err){
-                    log(err);
-                    return;
-                }
-                req.session.reload(function(err){
-                    if(err){
-                        log(err);
-                        return;
-                    }
-                    res.cookie(SESSION_KEY,req.sessionID,req.session.cookie);
-                    res.redirect(url.toString());
-                });
-            });
-            return;
+            req.session.user = result.data.user;
         } else {
             log('无效ticket');
         }
-        // 已登录,在 backurl 后附加 ticket
     } else if (req.session.user) {
-        let ticket = ticketManager.push(req.session.user);
+        // 已登录,在 backurl 后附加 ticket
+        let ticket = ticketManager.push({ user: req.session.user });
         url.searchParams.append('ticket', ticket);
         log('sso已登录 ' + ticket);
     } else {
+        // 未登录,在 backurl 后附加 空ticket
         url.searchParams.append('ticket', '');
         log('sso未登录');
     }
