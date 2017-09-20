@@ -3,6 +3,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const { URL } = require('url');
+const colors = require('colors');
 
 const ticketManager = require('./sso/ticket-manager');
 const userManager = require('./sso/user-manager');
@@ -24,6 +25,11 @@ app.use(session({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+app.use(function(req, res, next) {
+    console.log(`${req.method} ${req.url}`.blue);
+    next();
+});
 
 //  内部访问过滤器，限定IP
 let innerFilter = express.Router();
@@ -132,5 +138,5 @@ let server = app.listen(port, function() {
 });
 
 function log(text) {
-    console.log(`${domain}: ${text}`);
+    console.log(`\t${domain}: ${text}`);
 }

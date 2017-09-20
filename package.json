@@ -22,6 +22,7 @@
     "homepage": "https://github.com/wujunxi/sso-test#readme",
     "dependencies": {
         "body-parser": "^1.17.2",
+        "colors": "^1.1.2",
         "cookie-parser": "^1.4.3",
         "express": "^4.15.4",
         "express-session": "^1.15.5",

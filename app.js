@@ -2,6 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const colors = require('colors');
 
 const { getTicket, checkTicket, SSO_URL } = require('./sso/sso');
 
@@ -28,6 +29,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 // 设置静态资源目录
 app.use(express.static('public'));
+
+app.use(function(req, res, next) {
+    console.log(`${req.method} ${req.url}`.blue);
+    next();
+});
+
 
 // 定义登录过滤器
 let loginFilter = express.Router();
@@ -107,6 +114,7 @@ logoutRouter.get('/', function(req, res, next) {
     if (req.session.user) {
         delete req.session.user;
     }
+    // to-do logout sso
     res.redirect(INDEX_URL);
 });
 
@@ -145,5 +153,5 @@ server.on('error', function(err) {
 });
 
 function log(text) {
-    console.log(`${DOMAIN}: ${text}`);
+    console.log(`\t${DOMAIN}: ${text}`);
 }
